@@ -13,8 +13,12 @@ const STEP_MS = 180;
 let snake, direction, nextDirection, food, score, best, running, paused, loopId;
 
 function loadBest() {
-  const stored = Number(localStorage.getItem("snake-best"));
-  return Number.isFinite(stored) ? stored : 0;
+  try {
+    const stored = Number(localStorage.getItem("snake-best"));
+    return Number.isFinite(stored) ? stored : 0;
+  } catch (e) {
+    return 0;
+  }
 }
 
 function saveBest(value) {
@@ -52,7 +56,6 @@ function resetGame() {
   paused = false;
   scoreEl.textContent = "0";
   placeFood();
-  draw();
 }
 
 function showOverlay(text) {
@@ -107,7 +110,6 @@ function tick() {
 
   if (hitsWall || hitsSelf) {
     endGame();
-    draw();
     return;
   }
 
@@ -120,27 +122,136 @@ function tick() {
   } else {
     snake.pop();
   }
-
-  draw();
-}
-
-function draw() {
-  ctx.fillStyle = "#16161f";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#f87171";
-  ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
-
-  snake.forEach((segment, i) => {
-    ctx.fillStyle = i === 0 ? "#4ade80" : "#22c55e";
-    ctx.fillRect(segment.x * CELL + 1, segment.y * CELL + 1, CELL - 2, CELL - 2);
-  });
 }
 
 function setDirection(x, y) {
   // Prevent reversing directly into the snake's own neck.
   if (direction.x === -x && direction.y === -y) return;
   nextDirection = { x, y };
+}
+
+function roundedRectPath(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+}
+
+function drawBackground() {
+  ctx.fillStyle = "#14141c";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if ((x + y) % 2 === 0) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
+        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      }
+    }
+  }
+}
+
+function drawFood(now) {
+  const cx = food.x * CELL + CELL / 2;
+  const cy = food.y * CELL + CELL / 2;
+  const pulse = Math.sin(now / 220) * 1.4;
+  const radius = CELL / 2 - 3 + pulse;
+
+  ctx.save();
+  ctx.shadowColor = "rgba(248, 113, 113, 0.85)";
+  ctx.shadowBlur = 14;
+
+  const gradient = ctx.createRadialGradient(
+    cx - radius / 3,
+    cy - radius / 3,
+    1,
+    cx,
+    cy,
+    radius
+  );
+  gradient.addColorStop(0, "#fecaca");
+  gradient.addColorStop(0.5, "#f87171");
+  gradient.addColorStop(1, "#dc2626");
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSnake() {
+  const len = snake.length;
+
+  for (let i = len - 1; i >= 0; i--) {
+    const segment = snake[i];
+    const t = len > 1 ? i / (len - 1) : 0;
+    const lightness = 52 - t * 20;
+    const x = segment.x * CELL + 1.5;
+    const y = segment.y * CELL + 1.5;
+    const size = CELL - 3;
+
+    ctx.save();
+    if (i === 0) {
+      ctx.shadowColor = "rgba(74, 222, 128, 0.65)";
+      ctx.shadowBlur = 10;
+    }
+    ctx.fillStyle = `hsl(142, 65%, ${lightness}%)`;
+    roundedRectPath(x, y, size, size, i === 0 ? 7 : 5);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
+    ctx.lineWidth = 1;
+    roundedRectPath(x, y, size, size, i === 0 ? 7 : 5);
+    ctx.stroke();
+  }
+
+  drawHeadFace();
+}
+
+function drawHeadFace() {
+  const head = snake[0];
+  const cx = head.x * CELL + CELL / 2;
+  const cy = head.y * CELL + CELL / 2;
+  const perp = { x: -direction.y, y: direction.x };
+  const forward = 3.5;
+  const spread = 4.5;
+  const eyeRadius = 2.6;
+  const pupilRadius = 1.3;
+
+  [1, -1].forEach((side) => {
+    const ex = cx + direction.x * forward + perp.x * spread * side;
+    const ey = cy + direction.y * forward + perp.y * spread * side;
+
+    ctx.fillStyle = "#f4fff8";
+    ctx.beginPath();
+    ctx.arc(ex, ey, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#0b0b12";
+    ctx.beginPath();
+    ctx.arc(ex + direction.x * 1, ey + direction.y * 1, pupilRadius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function draw(now) {
+  drawBackground();
+  drawFood(now || 0);
+  drawSnake();
+}
+
+function animate(now) {
+  draw(now);
+  requestAnimationFrame(animate);
 }
 
 const KEY_MAP = {
@@ -184,3 +295,4 @@ best = loadBest();
 bestEl.textContent = String(best);
 resetGame();
 showOverlay("Press Space or tap to start");
+requestAnimationFrame(animate);

@@ -9,7 +9,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0b0b12;
+  background: radial-gradient(circle at 50% 30%, #1a1a26 0%, #0b0b12 70%);
   color: #f4f4f5;
   font-family: system-ui, "Segoe UI", Arial, sans-serif;
 }
@@ -27,6 +27,7 @@ h1 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #4ade80;
+  text-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
 }
 
 .hud {
@@ -46,10 +47,11 @@ h1 {
 }
 
 canvas {
-  background: #16161f;
+  display: block;
+  background: #14141c;
   border: 2px solid #27272a;
-  border-radius: 8px;
-  image-rendering: pixelated;
+  border-radius: 10px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 40px rgba(74, 222, 128, 0.08);
 }
 
 .overlay {
