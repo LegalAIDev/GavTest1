@@ -4,13 +4,21 @@ const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
 const overlay = document.getElementById("overlay");
 const overlayText = document.getElementById("overlay-text");
+const nameEntry = document.getElementById("name-entry");
+const nameForm = document.getElementById("name-form");
+const nameInput = document.getElementById("name-input");
+const skipNameBtn = document.getElementById("skip-name");
+const pendingScoreEl = document.getElementById("pending-score");
+const leaderboardList = document.getElementById("leaderboard-list");
 
 const CELL = 20;
 const COLS = canvas.width / CELL;
 const ROWS = canvas.height / CELL;
 const STEP_MS = 180;
+const LEADERBOARD_KEY = "snake-leaderboard";
+const MAX_LEADERBOARD_ENTRIES = 5;
 
-let snake, direction, nextDirection, food, score, best, running, paused, loopId;
+let snake, direction, nextDirection, food, score, best, running, paused, loopId, pendingScore;
 
 function loadBest() {
   try {
@@ -27,6 +35,61 @@ function saveBest(value) {
   } catch (e) {
     /* storage unavailable, ignore */
   }
+}
+
+function loadLeaderboard() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LEADERBOARD_KEY));
+    return Array.isArray(raw) ? raw : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLeaderboard(list) {
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list));
+  } catch (e) {
+    /* storage unavailable, ignore */
+  }
+}
+
+function qualifiesForLeaderboard(list, value) {
+  if (value <= 0) return false;
+  if (list.length < MAX_LEADERBOARD_ENTRIES) return true;
+  return value > list[list.length - 1].score;
+}
+
+function renderLeaderboard(list, highlightIndex) {
+  leaderboardList.innerHTML = "";
+
+  if (list.length === 0) {
+    const li = document.createElement("li");
+    li.className = "leaderboard-empty";
+    li.textContent = "No scores yet — be the first!";
+    leaderboardList.appendChild(li);
+    return;
+  }
+
+  list.forEach((entry, i) => {
+    const li = document.createElement("li");
+    li.className = "leaderboard-row" + (i === highlightIndex ? " is-new" : "");
+
+    const rank = document.createElement("span");
+    rank.className = "rank";
+    rank.textContent = String(i + 1);
+
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = entry.name;
+
+    const points = document.createElement("span");
+    points.className = "points";
+    points.textContent = String(entry.score);
+
+    li.append(rank, name, points);
+    leaderboardList.appendChild(li);
+  });
 }
 
 function randomCell() {
@@ -67,6 +130,18 @@ function hideOverlay() {
   overlay.hidden = true;
 }
 
+function showNameEntry(value) {
+  hideOverlay();
+  pendingScoreEl.textContent = String(value);
+  nameInput.value = "";
+  nameEntry.hidden = false;
+  nameInput.focus();
+}
+
+function hideNameEntry() {
+  nameEntry.hidden = true;
+}
+
 function startGame() {
   resetGame();
   running = true;
@@ -83,7 +158,29 @@ function endGame() {
     bestEl.textContent = String(best);
     saveBest(best);
   }
-  showOverlay(`Game over — score ${score}. Press Space or tap to restart`);
+
+  if (qualifiesForLeaderboard(loadLeaderboard(), score)) {
+    pendingScore = score;
+    showNameEntry(score);
+  } else {
+    showOverlay(`Game over — score ${score}. Press Space or tap to restart`);
+  }
+}
+
+function finishScoreEntry(name) {
+  const list = loadLeaderboard();
+  const trimmedName = name.trim().slice(0, 12) || "Anonymous";
+  const entry = { name: trimmedName, score: pendingScore };
+
+  list.push(entry);
+  list.sort((a, b) => b.score - a.score);
+  const top = list.slice(0, MAX_LEADERBOARD_ENTRIES);
+
+  saveLeaderboard(top);
+  renderLeaderboard(top, top.indexOf(entry));
+  hideNameEntry();
+  showOverlay(`Game over — score ${pendingScore}. Press Space or tap to restart`);
+  pendingScore = undefined;
 }
 
 function togglePause() {
@@ -266,6 +363,8 @@ const KEY_MAP = {
 };
 
 window.addEventListener("keydown", (e) => {
+  if (document.activeElement === nameInput) return;
+
   if (e.code === "Space") {
     e.preventDefault();
     if (!running) {
@@ -291,8 +390,18 @@ overlay.addEventListener("click", () => {
   }
 });
 
+nameForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  finishScoreEntry(nameInput.value);
+});
+
+skipNameBtn.addEventListener("click", () => {
+  finishScoreEntry("Anonymous");
+});
+
 best = loadBest();
 bestEl.textContent = String(best);
+renderLeaderboard(loadLeaderboard(), -1);
 resetGame();
 showOverlay("Press Space or tap to start");
 requestAnimationFrame(animate);

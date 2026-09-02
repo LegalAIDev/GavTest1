@@ -43,7 +43,6 @@ h1 {
 
 .board-wrap {
   position: relative;
-  line-height: 0;
 }
 
 canvas {
@@ -79,4 +78,112 @@ canvas {
 .hint {
   font-size: 0.85rem;
   color: #71717a;
+}
+
+.name-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.name-form input {
+  width: 180px;
+  padding: 8px 10px;
+  background: #0b0b12;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  color: #f4f4f5;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.name-form input:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+
+.name-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.name-form button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+  background: #27272a;
+  color: #f4f4f5;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.name-form button[type="submit"] {
+  background: #4ade80;
+  border-color: #4ade80;
+  color: #0b0b12;
+  font-weight: 600;
+}
+
+.leaderboard {
+  width: 400px;
+  max-width: 100%;
+  background: #16161f;
+  border: 1px solid #27272a;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.leaderboard h2 {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  margin-bottom: 8px;
+}
+
+.leaderboard ol {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.leaderboard-row .rank {
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-row .points {
+  font-variant-numeric: tabular-nums;
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.leaderboard-row.is-new {
+  background: rgba(74, 222, 128, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.4);
+}
+
+.leaderboard-empty {
+  color: #71717a;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 4px 0;
 }
