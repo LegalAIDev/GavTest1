@@ -13,10 +13,12 @@ const leaderboardList = document.getElementById("leaderboard-list");
 const boardWrap = document.getElementById("board-wrap");
 const effectBadge = document.getElementById("effect-badge");
 const pickupToast = document.getElementById("pickup-toast");
+const touchControls = document.getElementById("touch-controls");
 
 const CELL = 20;
 const COLS = canvas.width / CELL;
 const ROWS = canvas.height / CELL;
+const CANVAS_BORDER = 2;
 const STEP_MS = 180;
 const LEADERBOARD_KEY = "snake-leaderboard";
 const MAX_LEADERBOARD_ENTRIES = 5;
@@ -32,8 +34,10 @@ const POWERUP_LIFETIME = 7000;
 const POWERUP_MIN_INTERVAL = 8000;
 const POWERUP_MAX_INTERVAL = 14000;
 
-let snake, direction, nextDirection, food, score, best, running, paused, pendingScore;
+let snake, prevSnake, direction, nextDirection, food, score, best, running, paused, pendingScore;
 let powerUp, activeEffect, powerUpSpawnTimer, tickAccumulator, lastFrameTime, flashTimeoutId, toastTimeoutId, toastFadeId;
+let shakeTrauma = 0;
+let endGameTimeoutId;
 
 function loadBest() {
   try {
@@ -150,6 +154,43 @@ function flashBoard(glowColor) {
   flashTimeoutId = setTimeout(() => boardWrap.classList.remove("power-flash"), 350);
 }
 
+function triggerShake(amount) {
+  shakeTrauma = Math.min(1, shakeTrauma + amount);
+}
+
+function applyShake(delta) {
+  shakeTrauma = Math.max(0, shakeTrauma - delta / 300);
+
+  if (shakeTrauma <= 0) {
+    canvas.style.transform = "";
+    return;
+  }
+
+  const power = shakeTrauma * shakeTrauma;
+  const maxOffset = 8;
+  const dx = (Math.random() * 2 - 1) * maxOffset * power;
+  const dy = (Math.random() * 2 - 1) * maxOffset * power;
+  canvas.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`;
+}
+
+function flashNewBest() {
+  bestEl.classList.remove("new-best");
+  // Force reflow so re-adding the class restarts the animation on repeat records.
+  void bestEl.offsetWidth;
+  bestEl.classList.add("new-best");
+}
+
+function spawnScorePopup(gridX, gridY, text, color) {
+  const el = document.createElement("div");
+  el.className = "score-popup";
+  el.textContent = text;
+  el.style.color = color;
+  el.style.left = `${gridX * CELL + CELL / 2 + CANVAS_BORDER}px`;
+  el.style.top = `${gridY * CELL + CELL / 2 + CANVAS_BORDER}px`;
+  boardWrap.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
+}
+
 function showPickupToast(text, color) {
   pickupToast.textContent = text;
   pickupToast.style.color = color;
@@ -233,6 +274,7 @@ function resetGame() {
     { x: Math.floor(COLS / 2) - 1, y: Math.floor(ROWS / 2) },
     { x: Math.floor(COLS / 2) - 2, y: Math.floor(ROWS / 2) },
   ];
+  prevSnake = snake.map((s) => ({ x: s.x, y: s.y }));
   direction = { x: 1, y: 0 };
   nextDirection = direction;
   score = 0;
@@ -241,6 +283,8 @@ function resetGame() {
   powerUp = null;
   activeEffect = null;
   tickAccumulator = 0;
+  shakeTrauma = 0;
+  canvas.style.transform = "";
   scheduleNextPowerUp();
   placeFood();
   renderEffectBadge();
@@ -286,18 +330,20 @@ function endGame() {
   clearActiveEffect();
   renderEffectBadge();
   hidePickupToast();
-  if (score > best) {
-    best = score;
-    bestEl.textContent = String(best);
-    saveBest(best);
-  }
+  triggerShake(1);
+  flashBoard("rgba(248, 113, 113, 0.85)");
 
-  if (qualifiesForLeaderboard(loadLeaderboard(), score)) {
-    pendingScore = score;
-    showNameEntry(score);
-  } else {
-    showOverlay(`Game over — score ${score}. Press Space or tap to restart`);
-  }
+  const finalScore = score;
+  clearTimeout(endGameTimeoutId);
+  endGameTimeoutId = setTimeout(() => {
+    if (running) return; // a new game started during the hit-stop delay
+    if (qualifiesForLeaderboard(loadLeaderboard(), finalScore)) {
+      pendingScore = finalScore;
+      showNameEntry(finalScore);
+    } else {
+      showOverlay(`Game over — score ${finalScore}. Press Space or tap to restart`);
+    }
+  }, 150);
 }
 
 function finishScoreEntry(name) {
@@ -327,6 +373,7 @@ function togglePause() {
 }
 
 function tick() {
+  prevSnake = snake.map((s) => ({ x: s.x, y: s.y }));
   direction = nextDirection;
 
   const head = {
@@ -346,8 +393,19 @@ function tick() {
 
   let grew = false;
   if (head.x === food.x && head.y === food.y) {
-    score += 10 * currentScoreMultiplier();
+    const multiplier = currentScoreMultiplier();
+    const gained = 10 * multiplier;
+    score += gained;
     scoreEl.textContent = String(score);
+    spawnScorePopup(food.x, food.y, `+${gained}`, multiplier > 1 ? "#fb923c" : "#f4f4f5");
+
+    if (score > best) {
+      best = score;
+      bestEl.textContent = String(best);
+      saveBest(best);
+      flashNewBest();
+    }
+
     placeFood();
     grew = true;
   }
@@ -536,11 +594,26 @@ function drawPowerUp(now) {
   ctx.restore();
 }
 
-function drawSnake() {
-  const len = snake.length;
+function getRenderT() {
+  if (!running) return 1;
+  return Math.min(1, tickAccumulator / currentStepMs());
+}
+
+function getRenderSnake(t) {
+  return snake.map((seg, i) => {
+    const prev = prevSnake && prevSnake[i] ? prevSnake[i] : seg;
+    return {
+      x: prev.x + (seg.x - prev.x) * t,
+      y: prev.y + (seg.y - prev.y) * t,
+    };
+  });
+}
+
+function drawSnake(renderSnake) {
+  const len = renderSnake.length;
 
   for (let i = len - 1; i >= 0; i--) {
-    const segment = snake[i];
+    const segment = renderSnake[i];
     const t = len > 1 ? i / (len - 1) : 0;
     const lightness = 52 - t * 20;
     const x = segment.x * CELL + 1.5;
@@ -549,10 +622,10 @@ function drawSnake() {
 
     ctx.save();
     if (i === 0) {
-      ctx.shadowColor = "rgba(74, 222, 128, 0.65)";
+      ctx.shadowColor = "rgba(74, 222, 192, 0.65)";
       ctx.shadowBlur = 10;
     }
-    ctx.fillStyle = `hsl(142, 65%, ${lightness}%)`;
+    ctx.fillStyle = `hsl(168, 65%, ${lightness}%)`;
     roundedRectPath(x, y, size, size, i === 0 ? 7 : 5);
     ctx.fill();
     ctx.restore();
@@ -563,11 +636,10 @@ function drawSnake() {
     ctx.stroke();
   }
 
-  drawHeadFace();
+  drawHeadFace(renderSnake[0]);
 }
 
-function drawHeadFace() {
-  const head = snake[0];
+function drawHeadFace(head) {
   const cx = head.x * CELL + CELL / 2;
   const cy = head.y * CELL + CELL / 2;
   const perp = { x: -direction.y, y: direction.x };
@@ -596,7 +668,7 @@ function draw(now) {
   drawBackground();
   drawFood(now || 0);
   drawPowerUp(now || 0);
-  drawSnake();
+  drawSnake(getRenderSnake(getRenderT()));
 }
 
 function animate(now) {
@@ -614,6 +686,10 @@ function animate(now) {
     }
     updatePowerUps(delta);
     renderEffectBadge();
+  }
+
+  if (shakeTrauma > 0) {
+    applyShake(delta);
   }
 
   draw(now);
@@ -657,6 +733,17 @@ overlay.addEventListener("click", () => {
   } else {
     togglePause();
   }
+});
+
+touchControls.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-dir]");
+  if (!btn) return;
+  if (!running) {
+    startGame();
+    return;
+  }
+  const [dx, dy] = btn.dataset.dir.split(",").map(Number);
+  setDirection(dx, dy);
 });
 
 nameForm.addEventListener("submit", (e) => {

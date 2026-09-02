@@ -26,8 +26,8 @@ h1 {
   font-size: 2rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #4ade80;
-  text-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
+  color: #4adec0;
+  text-shadow: 0 0 20px rgba(74, 222, 192, 0.4);
 }
 
 .hud {
@@ -38,7 +38,30 @@ h1 {
 }
 
 .hud strong {
+  display: inline-block;
   color: #f4f4f5;
+}
+
+.new-best {
+  animation: best-pop 0.6s ease;
+}
+
+@keyframes best-pop {
+  0% {
+    transform: scale(1);
+    color: #f4f4f5;
+    text-shadow: none;
+  }
+  40% {
+    transform: scale(1.35);
+    color: #facc15;
+    text-shadow: 0 0 12px rgba(250, 204, 21, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    color: #f4f4f5;
+    text-shadow: none;
+  }
 }
 
 .effect-badge {
@@ -55,6 +78,27 @@ h1 {
 
 .board-wrap.power-flash canvas {
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 55px var(--flash-glow, rgba(250, 204, 21, 0.75));
+}
+
+.score-popup {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  animation: score-popup-float 700ms ease-out forwards;
+}
+
+@keyframes score-popup-float {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 24px));
+  }
 }
 
 .pickup-toast {
@@ -77,9 +121,9 @@ h1 {
 canvas {
   display: block;
   background: #14141c;
-  border: 2px solid #27272a;
+  border: 2px solid #71717a;
   border-radius: 10px;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 40px rgba(74, 222, 128, 0.08);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 40px rgba(74, 222, 192, 0.08);
 }
 
 .overlay {
@@ -106,7 +150,56 @@ canvas {
 
 .hint {
   font-size: 0.85rem;
-  color: #71717a;
+  color: #a1a1aa;
+}
+
+.touch-controls {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touch-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(2, 56px);
+    grid-template-areas:
+      ".    up    ."
+      "left down right";
+    gap: 8px;
+    touch-action: manipulation;
+  }
+
+  .touch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #f4f4f5;
+    background: #16161f;
+    border: 1px solid #27272a;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .touch-btn:active {
+    background: #27272a;
+  }
+
+  .touch-up {
+    grid-area: up;
+  }
+
+  .touch-left {
+    grid-area: left;
+  }
+
+  .touch-right {
+    grid-area: right;
+  }
+
+  .touch-down {
+    grid-area: down;
+  }
 }
 
 .name-form {
@@ -129,7 +222,7 @@ canvas {
 
 .name-form input:focus {
   outline: none;
-  border-color: #4ade80;
+  border-color: #4adec0;
 }
 
 .name-form-actions {
@@ -148,8 +241,8 @@ canvas {
 }
 
 .name-form button[type="submit"] {
-  background: #4ade80;
-  border-color: #4ade80;
+  background: #4adec0;
+  border-color: #4adec0;
   color: #0b0b12;
   font-weight: 600;
 }
@@ -201,13 +294,13 @@ canvas {
 
 .leaderboard-row .points {
   font-variant-numeric: tabular-nums;
-  color: #4ade80;
+  color: #4adec0;
   font-weight: 600;
 }
 
 .leaderboard-row.is-new {
-  background: rgba(74, 222, 128, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 192, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 192, 0.4);
 }
 
 .leaderboard-empty {
