@@ -18,8 +18,22 @@
       <div id="overlay" class="overlay">
         <p id="overlay-text">Press Space or tap to start</p>
       </div>
+      <div id="name-entry" class="overlay" hidden>
+        <form id="name-form" class="name-form">
+          <p>New high score: <strong id="pending-score">0</strong>!</p>
+          <input id="name-input" type="text" placeholder="Your name" maxlength="12" autocomplete="off" />
+          <div class="name-form-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="skip-name">Skip</button>
+          </div>
+        </form>
+      </div>
     </div>
     <p class="hint">Arrow keys / WASD to move &middot; Space to pause</p>
+    <section class="leaderboard">
+      <h2>High Scores</h2>
+      <ol id="leaderboard-list"></ol>
+    </section>
   </main>
   <script src="script.js"></script>
 </body>
