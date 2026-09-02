@@ -12,6 +12,7 @@ const pendingScoreEl = document.getElementById("pending-score");
 const leaderboardList = document.getElementById("leaderboard-list");
 const boardWrap = document.getElementById("board-wrap");
 const effectBadge = document.getElementById("effect-badge");
+const pickupToast = document.getElementById("pickup-toast");
 
 const CELL = 20;
 const COLS = canvas.width / CELL;
@@ -32,7 +33,7 @@ const POWERUP_MIN_INTERVAL = 8000;
 const POWERUP_MAX_INTERVAL = 14000;
 
 let snake, direction, nextDirection, food, score, best, running, paused, pendingScore;
-let powerUp, activeEffect, powerUpSpawnTimer, tickAccumulator, lastFrameTime, flashTimeoutId;
+let powerUp, activeEffect, powerUpSpawnTimer, tickAccumulator, lastFrameTime, flashTimeoutId, toastTimeoutId, toastFadeId;
 
 function loadBest() {
   try {
@@ -142,24 +143,44 @@ function spawnPowerUp() {
   powerUp = { type, x: cell.x, y: cell.y, ttl: POWERUP_LIFETIME };
 }
 
-function flashBoard() {
+function flashBoard(glowColor) {
+  boardWrap.style.setProperty("--flash-glow", glowColor);
   boardWrap.classList.add("power-flash");
   clearTimeout(flashTimeoutId);
   flashTimeoutId = setTimeout(() => boardWrap.classList.remove("power-flash"), 350);
 }
 
+function showPickupToast(text, color) {
+  pickupToast.textContent = text;
+  pickupToast.style.color = color;
+  pickupToast.hidden = false;
+  pickupToast.style.opacity = "1";
+
+  clearTimeout(toastTimeoutId);
+  clearTimeout(toastFadeId);
+  toastTimeoutId = setTimeout(() => {
+    pickupToast.style.opacity = "0";
+    toastFadeId = setTimeout(() => {
+      pickupToast.hidden = true;
+    }, 300);
+  }, 1300);
+}
+
 function applyPowerUp(type) {
   const def = POWER_UP_DEFS[type];
+  let toastText = `${def.glyph} ${def.label}`;
 
   if (type === "shrink") {
     const removable = Math.max(0, snake.length - 4);
     const removeCount = Math.min(3, removable);
     for (let i = 0; i < removeCount; i++) snake.pop();
+    toastText = removeCount > 0 ? `${def.glyph} Shrink −${removeCount}` : `${def.glyph} Already short!`;
   } else {
     activeEffect = { type, ttl: def.duration };
   }
 
-  flashBoard();
+  showPickupToast(toastText, def.color);
+  flashBoard(def.glow);
 }
 
 function clearActiveEffect() {
@@ -223,6 +244,13 @@ function resetGame() {
   scheduleNextPowerUp();
   placeFood();
   renderEffectBadge();
+  hidePickupToast();
+}
+
+function hidePickupToast() {
+  clearTimeout(toastTimeoutId);
+  clearTimeout(toastFadeId);
+  pickupToast.hidden = true;
 }
 
 function showOverlay(text) {
@@ -257,6 +285,7 @@ function endGame() {
   powerUp = null;
   clearActiveEffect();
   renderEffectBadge();
+  hidePickupToast();
   if (score > best) {
     best = score;
     bestEl.textContent = String(best);
