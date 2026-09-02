@@ -5,39 +5,76 @@
 }
 
 body {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #0b0b12;
-  overflow: hidden;
+  color: #f4f4f5;
+  font-family: system-ui, "Segoe UI", Arial, sans-serif;
 }
 
-.hello {
-  font-family: "Great Vibes", "Brush Script MT", cursive;
-  font-size: clamp(6rem, 22vw, 14rem);
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  background: linear-gradient(90deg, #ff6ec4, #7873f5, #4ade80, #ffb86c, #ff6ec4);
-  background-size: 300% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shine 6s linear infinite, float 3s ease-in-out infinite;
-  text-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
 }
 
-@keyframes shine {
-  to {
-    background-position: 300% center;
-  }
+h1 {
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4ade80;
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-12px);
-  }
+.hud {
+  display: flex;
+  gap: 24px;
+  font-size: 1rem;
+  color: #a1a1aa;
+}
+
+.hud strong {
+  color: #f4f4f5;
+}
+
+.board-wrap {
+  position: relative;
+  line-height: 0;
+}
+
+canvas {
+  background: #16161f;
+  border: 2px solid #27272a;
+  border-radius: 8px;
+  image-rendering: pixelated;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: rgba(11, 11, 18, 0.75);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 16px;
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay p {
+  font-size: 1.1rem;
+  color: #f4f4f5;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #71717a;
 }
