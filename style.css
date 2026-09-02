@@ -1,0 +1,43 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b0b12;
+  overflow: hidden;
+}
+
+.hello {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(4rem, 15vw, 10rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: linear-gradient(90deg, #ff6ec4, #7873f5, #4ade80, #ffb86c, #ff6ec4);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 6s linear infinite, float 3s ease-in-out infinite;
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+@keyframes shine {
+  to {
+    background-position: 300% center;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
