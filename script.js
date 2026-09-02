@@ -8,7 +8,7 @@ const overlayText = document.getElementById("overlay-text");
 const CELL = 20;
 const COLS = canvas.width / CELL;
 const ROWS = canvas.height / CELL;
-const STEP_MS = 110;
+const STEP_MS = 180;
 
 let snake, direction, nextDirection, food, score, best, running, paused, loopId;
 
